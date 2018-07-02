@@ -1,3 +1,5 @@
+import callsites from 'callsites';		// tslint:disable-line:no-require-imports
+import {extractLabel} from './lib/utils/extract-label';
 import {Predicate} from './lib/predicates/predicate';
 import {AnyPredicate} from './lib/predicates/any';
 import {testSymbol} from './lib/predicates/base-predicate';
@@ -187,13 +189,15 @@ export interface Ow {
 	readonly iterable: Predicate<Iterable<any>>;
 }
 
-const main = <T>(value: T, predicate: Predicate<T> | AnyPredicate<T>) => (predicate as any)[testSymbol](value, main);
+const main = <T>(value: T, predicate: Predicate<T> | AnyPredicate<T>, callsite: any = callsites()) => {
+	return (predicate as any)[testSymbol](value, main, extractLabel(callsite));
+};
 
 Object.defineProperties(main, {
 	isValid: {
 		value: <T>(value: T, predicate: Predicate<T>) => {
 			try {
-				main(value, predicate);
+				main(value, predicate, callsites());
 				return true;
 			} catch {
 				return false;
@@ -201,7 +205,7 @@ Object.defineProperties(main, {
 		}
 	},
 	create: {
-		value: <T>(predicate: Predicate<T>) => (value: T) => main(value, predicate)
+		value: <T>(predicate: Predicate<T>) => (value: T) => main(value, predicate, callsites())
 	},
 	any: {
 		value: (...predicates: Predicate[]) => new AnyPredicate(predicates)

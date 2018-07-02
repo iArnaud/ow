@@ -1,5 +1,42 @@
-import test from 'ava';
+// tslint:disable
 import m from '..';
+
+interface TestContext {
+	notThrows(cb: any): void;
+	throws(cb: any, message?: string): void;
+	true(value: any): void;
+	false(value: any): void;
+}
+
+const test = (title: string, fn: (t: TestContext) => void) => {
+	console.log(`Execute \`${title}\``);
+
+	const testContext: TestContext = {
+		notThrows: (cb: any) => cb(),
+		throws: (cb: any, message?: string) => {
+			try {
+				cb();
+				throw new Error(`Expected ${title} to throw, it did not`)
+			} catch (err) {
+				if (!message || err.message === message) {
+					return;
+				}
+
+				console.log(err.message, message);
+
+				throw err;
+			}
+		},
+		true: (_: any) => {},
+		false: (_: any) => {}
+	};
+
+	try {
+		fn(testContext);
+	} catch (err) {
+		console.log('>> ', err.message);
+	}
+};
 
 test('not', t => {
 	t.notThrows(() => m('foo!', m.string.not.alphanumeric));
